@@ -1,0 +1,82 @@
+\appendix
+
+\newpage
+\section*{Appendix}
+
+\section{Channel-embedding vocabulary and coordinate resolution}
+\label{app:channel_vocab}
+
+Our canonical channel-name vocabulary is the union of 343 electrodes from MNE's \texttt{standard\_1005} montage plus the 62 electrodes in SEED's custom \texttt{channel\_62\_pos.locs} file (the latter contributes CB1 and CB2, which are absent from MNE's default table). Names are normalized via regular-expression stripping of TUH prefixes (\texttt{EEG\ }), reference suffixes (\texttt{-REF}, \texttt{-LE}, \texttt{-A1}, \texttt{-A2}, \texttt{-M1}, \texttt{-M2}), case folding, and old 10--20 aliases ($T3\!\to\!T7$, $T4\!\to\!T8$, $T5\!\to\!P7$, $T6\!\to\!P8$). HMC's bipolar montage names (e.g.\ \texttt{F4-M1}) are normalized to the active electrode by the suffix rule. Every channel used in TUEG, TUAB, TUEV, TUSL, HMC, and SEED resolves to a 3-D position in this unified table.
+
+\section{TUEG pseudo-site derivation}
+\label{app:pseudo_sites}
+
+Each TUEG subject directory contains sessions named \texttt{s\{session\}\_\{year\}} with subfolders for montage type \texttt{\{01\_tcp\_ar, 02\_tcp\_le, 03\_tcp\_ar\_a, 04\_tcp\_le\_a\}}. We take every \texttt{(montage, year)} pair observed for that subject, choose the dominant pair by frequency, and map it to an integer in $[0, 64)$ via $\mathrm{site\_id}\!=\!\mathrm{montage\_idx}\!\times\!16 + \mathrm{year\_bin}$, where $\mathrm{year\_bin}\!=\!\max(0,\min(15, \text{year}-2002))$. The mapping is built once by \texttt{scripts/build\_pseudo\_sites.py} and cached alongside the preprocessed segments.
+
+\section{Architecture details}
+\label{app:arch_details}
+
+\subsection{LUNA generator}
+Hyperparameters:
+\begin{itemize}[leftmargin=*,topsep=0pt,itemsep=0pt]
+\item Patch size $50$ ($\!\Rightarrow\!40$ patches per 10\,s segment at 200\,Hz)
+\item Signal patch dim $d_{\text{sig}}\!=\!64$; channel embedding dim $d_{\text{ch}}\!=\!256$
+\item Latent bank size $K\!=\!64$; model dim $d_{\text{model}}\!=\!256$
+\item Encoder: $L\!=\!6$ blocks of (cross-attention, self-attention, FFN) with 8 heads each
+\item Decoder: $L_{\text{dec}}\!=\!4$ cross-/self-attention blocks per output channel
+\item Output head: two $\mathrm{Conv1d}$ refine layers + $\delta\cdot\tanh(g\cdot\cdot)$ with initial gain $g\!=\!1.0$ and $\delta\!=\!2.0$
+\end{itemize}
+Total parameters: approximately $43\mathrm{M}$ in our configuration.
+
+\subsection{Ensemble Functional Surrogate}
+$\Estar$ shares the LUNA encoder (trunk-only, no decoder) and pools the 64 latents by mean to a $256$-dim summary. Heads:
+\begin{itemize}[leftmargin=*,topsep=0pt,itemsep=0pt]
+\item Continuous head for CBraMod (LayerNorm $\to$ Linear(256,256) $\to$ GELU $\to$ Linear(256,200))
+\item Continuous head for REVE (... $\to$ Linear(256,512))
+\item VQ soft head for LaBraM (... $\to$ Linear(256,8192))
+\item VQ soft head for CodeBrain (... $\to$ Linear(256,4096))
+\item Cosine head for BIOT (... $\to$ Linear(256,256), $L_2$-normalized)
+\end{itemize}
+
+\section{FM checkpoint locations and loading notes}
+\label{app:fm_ckpts}
+
+\begin{itemize}[leftmargin=*,topsep=0pt,itemsep=0pt]
+\item \textbf{BIOT}: \texttt{/workspace/git\_repo/BIOT/pretrained-models/EEG-six-datasets-18-channels.ckpt}; loaded via the repository's \texttt{BIOTEncoder} class with \texttt{n\_channels=18, emb\_size=256}. Our 19-channel inputs are truncated to 18 for this teacher.
+\item \textbf{LaBraM}: \texttt{/workspace/git\_repo/LaBraM/checkpoints/labram-base.pth}; loaded via \texttt{modeling\_finetune.NeuralTransformer} with \texttt{use\_abs\_pos\_emb=False}. The companion \texttt{vqnsp.pth} is present but the factory symbol is absent in our release; the LaBraM head auto-downgrades to a continuous L2 head on the teacher's embedding.
+\item \textbf{CBraMod}: \texttt{/workspace/git\_repo/CBraMod/pretrained\_weights/pretrained\_weights.pth}; loaded via \texttt{models.cbramod.CBraMod(d\_model=200,n\_layer=12)}.
+\item \textbf{CodeBrain}: \texttt{/workspace/git\_repo/CodeBrain/Checkpoints/CodeBrain/CodeBrain.pth}; loaded via \texttt{Models.modeling\_finetune.NeuralTransformer} with \texttt{use\_abs\_pos\_emb=True, init\_values=0.1} and \texttt{forward\_features(x, input\_chans=list(range(C+1)))} (CodeBrain's code indexes pos\_embed by channel).
+\item \textbf{REVE}: \texttt{/workspace/git\_repo/reve\_eeg/hf/reve-base/}; loaded via HuggingFace \texttt{AutoModel.from\_pretrained(..., trust\_remote\_code=True)} and called with input shape $(B,C,T)$ plus positions $(B,C,3)$.
+\end{itemize}
+All five models are frozen (all \texttt{requires\_grad=False}) and kept in \texttt{eval()} mode throughout.
+
+\section{Training protocol}
+\label{app:training}
+
+\paragraph{Phase 0.} AdamW, learning rate $1\!\times\!10^{-4}$, weight decay $10^{-4}$, cosine schedule with 1-epoch warmup, gradient clipping at 1.0, 2 epochs, batch size 8.
+
+\paragraph{Phase 2.} AdamW, generator lr $10^{-4}$, adversary lr $10^{-4}$, batch size 16. Two epochs of \emph{adversary pretraining} on clean EEG precede joint training to ensure attackers are non-trivial when they enter the min-max game. Perturbation lower bound $\mathrm{RMS}(\delta)\!\ge\!0.25$ with weight $\lambda_{\text{pert\_lb}}\!=\!5$ prevents filter collapse to the identity solution. Site-DANN ramp schedule $\lambda_{\text{site}}(t)\!=\!0.1\cdot\min(1,t/2)$ across the first two training epochs.
+
+\paragraph{Checkpoint selection.} Best-by-val-MSE generator weights are saved under EMA (decay $0.999$). Final eval uses the EMA checkpoint, not the latest.
+
+\section{Complete loss weights}
+\label{app:loss_weights}
+
+\begin{table}[h]
+\caption{Loss-term weights used in Phase 2 joint adversarial training.}
+\centering\small
+\begin{tabular}{lr}
+\toprule
+Term & Weight \\
+\midrule
+$\mathcal{L}_{\text{mse}}$ & $0.3$ \\
+$\mathcal{L}_{\text{mae}}$ & $1.0$ \\
+$\mathcal{L}_\star^{\text{geom}}$ & $0.5$ \\
+$\mathcal{L}_{\text{priv}}$ (softmin-$\beta\!=\!5$) & $2.0$ \\
+$\mathcal{L}_{\text{corr}}$ ($\rho^\star\!=\!0.3$) & $1.0$ \\
+$\mathcal{L}_{\text{spec}}$ & $0.05$ \\
+$\mathcal{L}_{\text{pert\_lb}}$ (RMS $\ge\!0.25$) & $5.0$ \\
+$\mathcal{L}_{\text{site}}$ (GRL, ramp) & $0.1$ \\
+\bottomrule
+\end{tabular}
+\end{table}

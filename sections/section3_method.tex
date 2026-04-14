@@ -1,0 +1,117 @@
+%=============================================================
+\section{Method}
+\label{sec:method}
+%=============================================================
+
+\subsection{Problem formulation and threat model}
+\label{sec:formulation}
+
+Let $X \in \R^{C \times T}$ denote a multichannel EEG segment ($T\!=\!2000$ samples at 200\,Hz, $C$ observed electrodes) and $S \in \{1,\ldots,K\}$ its subject label. A privacy filter $\Ft:\R^{C\times T}\!\to\!\R^{C\times T}$ maps $X$ to a bounded perturbation of itself:
+\begin{equation}
+\Xt = \Ft(X) = X + \delta\cdot\tanh\bigl(g\cdot h_\theta(X;\mathcal{N},\mathcal{P})\bigr),\qquad
+\|\Xt - X\|_\infty \le \delta,
+\label{eq:filter}
+\end{equation}
+where $\mathcal{N}$ and $\mathcal{P}$ are the observed channel names and 3-D scalp coordinates, $h_\theta$ is the data-dependent perturbation produced by our generator (Section~\ref{sec:generator}), $g$ is a learnable scalar gain, and $\delta\!=\!2.0$ in $z$-scored units enforces the $\ell_\infty$ bound by construction.
+
+\paragraph{Threat model.} We consider three attacker families evaluated \emph{after} training:
+(1)~a \emph{retrained signal-space attacker}---a DeepCNN subject classifier trained from scratch on the filtered output; (2)~\emph{frozen FM-representation probes}, small MLPs trained on $E_F(\Xt)$ for each teacher $F$ in a fixed foundation-model ensemble; (3)~a \emph{site classifier}, trained to recover the TUEG pseudo-site label. Privacy is measured as the worst-case top-1 accuracy over these attackers and aggregated via Adjusted Privacy Gain (APG; Definition~\ref{def:apg}).
+
+\paragraph{Utility objective.} Unlike prior work which fixes a single pretraining surrogate (typically MAE reconstruction), we require that $\Xt$ preserve the \emph{functional latent geometry} of a heterogeneous ensemble $\FMset\!=\!\{F_1,\ldots,F_5\}$ comprising continuous masked reconstruction, VQ tokenization, and contrastive pretraining. The utility objective is written in terms of an offline-distilled surrogate $\Estar$ that aggregates all paradigms (Section~\ref{sec:surrogate}).
+
+\subsection{Channel-agnostic LUNA generator}
+\label{sec:generator}
+
+The generator $h_\theta$ follows a LUNA-style~\citep{luna} latent-query design so that a single set of weights handles arbitrary subsets of the international 10--05 electrode system. Figure~\ref{fig:arch}(a) illustrates the flow.
+
+\paragraph{Channel embedding.} Each observed channel receives a $d_{\text{ch}}\!=\!256$-dimensional token:
+\begin{equation}
+\mathbf{e}_c = \mathrm{LearnedEmb}[\mathrm{name}(c)] + M_\phi(\mathbf{p}_c)\cdot \mathbf{1}\!\bigl[\mathrm{has\_coord}(c)\bigr],
+\end{equation}
+where $\mathrm{LearnedEmb}$ is a learnable dictionary keyed by a canonical superset of 110 channel names (covering 10--05 plus SEED's CB1/CB2 via the dataset's provided \texttt{.locs} file) and $M_\phi$ is a 2-layer MLP of the MNE standard-1005 3-D position $\mathbf{p}_c\!\in\!\R^3$. When a channel's position is missing (e.g.\ HMC bipolar references) the coordinate branch is disabled via a learned ``missing'' bias. Name normalization handles TUH-family variants (\texttt{EEG Fp1-REF}, \texttt{Fp1-LE}), old 10--20 aliases ($T3\!\to\!T7$, $T4\!\to\!T8$), and HMC bipolar prefixes (\texttt{F4-M1}$\to$\texttt{F4}).
+
+\paragraph{Encoder.} The signal is patched by a per-channel $\mathrm{Conv1d}(1,d_{\text{sig}},k{=}50,\mathrm{stride}{=}50)$ yielding $C\!\times\!40$ tokens of dimension $d_{\text{sig}}\!=\!64$ each. These are fused with the channel embedding, added to a learnable patch-position embedding, and flattened to a sequence of $C\cdot 40$ tokens. $K\!=\!64$ learnable latent queries $\mathbf{q}_{1:K}\in\R^{K\times d}$ ($d\!=\!256$) cross-attend to the tokens through $L\!=\!6$ blocks of (cross-attention, self-attention, FFN). A key-padding mask suppresses padded channels when $C\!<\!C_{\max}$.
+
+\paragraph{Coord-conditioned decoder.} For each requested output channel $c'\in\mathcal{C}_{\text{out}}$ we form a query $\bar{\mathbf{q}}_{c',p}\!=\!\mathbf{e}_{c'}+\mathrm{pos\_embed}[p]$ and pass it through $L_{\text{dec}}\!=\!4$ decoder blocks that attend to the shared latent bank; the result is linearly unpatched to raw samples, refined by a $1$D convolutional block across patch seams, and passed through $\delta\cdot\tanh(g\cdot\cdot)$ to yield the final bounded perturbation.
+
+\paragraph{Training-time montage subsampling.} For each sample we draw $C_{\text{sub}}\!\sim\!\mathrm{Uniform}(8,19)$ and force $C_{\text{sub}}\!=\!19$ with probability $0.5$. The generator therefore sees a distribution over montages during training even though the physical cache is 19-channel. At inference it generalizes zero-shot to HMC (4 bipolar channels), TUAB (23, projected to 19), and SEED (62, projected to 19).
+
+\subsection{Ensemble Functional Surrogate \texorpdfstring{$\Estar$}{E*}}
+\label{sec:surrogate}
+
+We distill a single multi-head student $\Estar$ from a frozen five-FM ensemble
+\begin{equation}
+\FMset = \{\underbrace{\text{BIOT}}_{\text{contrastive}},\ \underbrace{\text{LaBraM},\text{CodeBrain}}_{\text{VQ tokenization}},\ \underbrace{\text{CBraMod},\text{REVE}}_{\text{continuous MAE}}\}.
+\end{equation}
+Every teacher is loaded from its published checkpoint and kept fully frozen. $\Estar$ shares the same LUNA encoder as the generator (K=64 latents, L=6 blocks) followed by mean-pooling to a $256$-dim pooled vector that is routed to five heads:
+
+\begin{align}
+\textbf{Continuous head } (F\!\in\!\{\text{CBraMod},\text{REVE}\})\colon &\quad D_F(X,\Xt) = \tfrac{1}{d_F}\|h_F^{\text{stu}}(X)-h_F^{\text{stu}}(\Xt)\|_2^2 \notag\\
+\textbf{VQ soft-KL head } (F\!\in\!\{\text{LaBraM},\text{CodeBrain}\})\colon &\quad D_F = \KL\!\bigl(\sigma_\tau(\hat{\ell}_F(X))_{\mathcal{T}_K}\ \|\ \sigma_\tau(\hat{\ell}_F(\Xt))_{\mathcal{T}_K}\bigr) \notag\\
+\textbf{Cosine head } (F\!=\!\text{BIOT})\colon &\quad D_F = 1 - \cos\!\bigl(p_F^{\text{stu}}(X),p_F^{\text{stu}}(\Xt)\bigr) \notag
+\end{align}
+where $\hat{\ell}_F(x)_k\!=\!-\|z_F(x)-c_k\|^2$ is the negative squared distance to the $k$-th teacher codebook vector, $\sigma_\tau(\cdot)_{\mathcal{T}_K}$ is the softmax over the teacher's top-$K\!=\!16$ nearest codes at temperature $\tau\!=\!0.1$, and $h_F^{\text{stu}}$, $p_F^{\text{stu}}$ are the student's continuous and cosine heads. If a teacher's VQ tokenizer cannot be loaded (e.g.\ LaBraM's \texttt{vqnsp.pth} has a build-specific symbol), the head is auto-downgraded to the continuous L2 form so the ensemble still covers the teacher's embedding geometry.
+
+\paragraph{Phase 0 distillation.} $\Estar$ is trained once with
+\begin{equation}
+\mathcal{L}_{\text{distill}} = \frac{1}{|\FMset|}\sum_{F\in\FMset} D_F\bigl(X, X\bigr),
+\label{eq:distill}
+\end{equation}
+where each $D_F$ compares the student's $F$-head output to the frozen teacher $F$'s output on the same clean input $X$. Because the student architecture matches the generator's encoder, the downstream Phase-2 loss $\mathcal{L}_\star^{\text{geom}}$ can be computed in a single forward pass through $\Estar$:
+\begin{equation}
+\mathcal{L}_\star^{\text{geom}}(X,\Xt) = \frac{1}{|\FMset|}\sum_{F\in\FMset} D_F\!\bigl(X, \Xt\bigr).
+\label{eq:geom_loss}
+\end{equation}
+This is the key tractability move: preserving five heterogeneous FMs' functional geometry costs one $\Estar$ forward per batch, not five FM forwards.
+
+\subsection{Adversarial objectives}
+\label{sec:adversary}
+
+\paragraph{Identity attackers.} Following prior work, we train four signal-space classifiers on $\Xt$: a DeepCNN ($4$-layer $\mathrm{Conv1d}$), a ResNet-1D ($6$ residual blocks), a patch-Transformer (patch 50, $4$ layers), and a spectral CNN that takes $|\mathrm{FFT}(\Xt)|$. Each outputs logits over $K$ subjects. The adversary is updated $n_{\text{adv}}\!=\!2$ steps per generator step under standard cross-entropy.
+
+\paragraph{FM-representation probes.} For each $F\!\in\!\FMset$ we add a lightweight MLP $A_F\!:\!\R^{d_F}\!\to\!\R^{K}$ fed by the frozen teacher embedding $E_F(\Xt)$. These five heads raise the dimension of the threat model from signal space to the latent spaces that foundation-model transfer actually consumes.
+
+\paragraph{Site-adversarial gradient reversal.} A 64-way site classifier $A_{\text{site}}$ is attached to the pooled LUNA latents via a gradient-reversal layer~\citep{ganin2015_dann} with ramp schedule $\lambda_{\text{site}}(t) \!=\! \lambda_{\text{site}}^{\max}\cdot\min(1,t/T_{\text{ramp}})$. TUEG pseudo-sites are derived from the directory structure as \texttt{montage-type}~$\times$~\texttt{year-bin} giving $4\!\times\!16\!=\!64$ classes; per-subject assignment uses the dominant \texttt{(montage,year)} across all of that subject's sessions.
+
+\paragraph{Filter privacy loss.} Denote the identity+FM-probe CE set by $\{L_1,\ldots,L_{M}\}$, $M\!=\!9$ (or $M\!=\!4$ in Phase~2 before FM probes are registered). The generator minimizes a softmin-$\beta$ worst-case:
+\begin{equation}
+\mathcal{L}_{\text{priv}} = -\mathrm{softmin}_\beta(\{L_i\}) = -\frac{1}{\beta}\log\!\Biggl(\frac{1}{M}\sum_{i=1}^M e^{-\beta L_i}\Biggr),\quad \beta\!=\!5,
+\end{equation}
+which approaches $-\min_i L_i$ as $\beta\!\to\!\infty$ but stays differentiable through every head with well-conditioned gradients.
+
+\subsection{Stability regularizers}
+\label{sec:stability}
+
+Two auxiliary regularizers carried over from prior work prevent degenerate solutions:
+\emph{(i) Correlation hinge}: $\mathcal{L}_{\text{corr}}\!=\!\max(0,\rho^\star - \bar{\rho}(X,\Xt))$ where $\bar{\rho}$ is per-channel Pearson correlation and $\rho^\star\!=\!0.3$. Without this, the filter has been observed to collapse onto sign-flipped signals that fool training attackers but destroy utility.
+\emph{(ii) Spectral consistency}: $\mathcal{L}_{\text{spec}}\!=\!\|\log\hat P_X - \log\hat P_{\Xt}\|_1$ with $\hat P$ a short-time Welch PSD, penalizes gross reshaping of the power spectrum.
+
+\subsection{Training curriculum}
+\label{sec:curriculum}
+
+NeuroVeil-U trains in three phases.
+
+\textbf{Phase 0 (offline, once).} Train $\Estar$ via Eq.~\ref{eq:distill} with AdamW, $\mathrm{lr}\!=\!10^{-4}$, cosine schedule, 2 epochs on 500 TUEG subjects (11{,}939 segments, ${\sim}5$ min on A40). After convergence $\Estar$ is frozen for all later phases.
+
+\textbf{Phase 1 (warmup).} 3 epochs with generator + MAE surrogate only; no adversaries. Loss:
+\begin{equation}
+\mathcal{L}_1 = \lambda_{\text{mse}}\mathcal{L}_{\text{mse}} + \lambda_{\text{mae}}\mathcal{L}_{\text{mae}} + \lambda_\star\mathcal{L}_\star^{\text{geom}} + \lambda_{\text{corr}}\mathcal{L}_{\text{corr}} + \lambda_{\text{spec}}\mathcal{L}_{\text{spec}}.
+\end{equation}
+
+\textbf{Phase 2 (adversarial).} 8 epochs. Adds the four identity attackers and the site-DANN head:
+\begin{equation}
+\mathcal{L}_2 = \mathcal{L}_1 + \lambda_{\text{priv}}\mathcal{L}_{\text{priv}}^{(4)} + \lambda_{\text{site}}(t)\mathcal{L}_{\text{site}}.
+\end{equation}
+
+\textbf{Phase 3 (optional, full 13 heads).} Adds the five FM-representation probes to the softmin set. The generator must now preserve $\Estar$-geometry \emph{and} simultaneously confuse attackers in signal space, the four teacher-specific embedding spaces, and the site-classifier---a natural curriculum that increases the effective dimension of the threat model as training progresses.
+
+\paragraph{Hyperparameters.} $\lambda_{\text{mse}}\!=\!0.5$, $\lambda_{\text{mae}}\!=\!1.0$, $\lambda_\star\!=\!0.5$, $\lambda_{\text{corr}}\!=\!1.0$, $\lambda_{\text{spec}}\!=\!0.05$, $\lambda_{\text{priv}}\!=\!2.0$, $\lambda_{\text{site}}^{\max}\!=\!0.1$, $T_{\text{ramp}}\!=\!2$ epochs, $\beta\!=\!5$, $\rho^\star\!=\!0.3$, $n_{\text{adv}}\!=\!2$, batch size 16, AdamW lr $10^{-4}$ for generator and $10^{-4}$ for adversaries. Generator EMA decay 0.999.
+
+\begin{definition}[Adjusted Privacy Gain]
+\label{def:apg}
+Given original and filtered top-1 re-identification accuracies $a_o,a_f$ over $K$ subjects,
+\begin{equation*}
+\mathrm{APG} = 1 - \frac{a_f - 1/K}{a_o - 1/K}.
+\end{equation*}
+$\mathrm{APG}\!=\!1$ when filtering drives accuracy to chance; $\mathrm{APG}\!<\!0$ when filtering hurts privacy.
+\end{definition}

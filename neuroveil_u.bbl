@@ -1,0 +1,204 @@
+\begin{thebibliography}{27}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Jiang et~al.(2024)Jiang, Zhao, and Lu]{labram}
+Wei-Bang Jiang, Li-Ming Zhao, and Bao-Liang Lu.
+\newblock Large brain model for learning generic representations with
+  tremendous {EEG} data in {BCI}.
+\newblock In \emph{The Twelfth International Conference on Learning
+  Representations}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=QzTpTRVtrP}.
+
+\bibitem[Wang et~al.(2024)Wang, Liu, He, Xu, Ma, and Li]{eegpt}
+Guangyu Wang, Wenchao Liu, Yuhong He, Cong Xu, Lin Ma, and Haifeng Li.
+\newblock {EEGPT}: Pretrained transformer for universal and reliable
+  representation of {EEG} signals.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~37, 2024.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2024/hash/4540d267eeec4e5dbd9dae9448f0b739-Abstract-Conference.html}.
+
+\bibitem[Wang et~al.(2025{\natexlab{a}})Wang, Zhao, Luo, Zhou, Jiang, Li, Li,
+  and Pan]{cbramod}
+Jiquan Wang, Sha Zhao, Zhiling Luo, Yangxuan Zhou, Haiteng Jiang, Shijian Li,
+  Tao Li, and Gang Pan.
+\newblock {CBraMod}: A criss-cross brain foundation model for {EEG} decoding.
+\newblock In \emph{The Thirteenth International Conference on Learning
+  Representations}, 2025{\natexlab{a}}.
+\newblock URL \url{https://openreview.net/forum?id=NPNUHgHF2w}.
+
+\bibitem[Yang et~al.(2023)Yang, Westover, and Sun]{biot}
+Chaoqi Yang, M.~Brandon Westover, and Jimeng Sun.
+\newblock {BIOT}: Biosignal transformer for cross-data learning in the wild.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36, 2023.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2023/hash/f6b30f3e2dd9cb53bbf2024402d02295-Abstract-Conference.html}.
+
+\bibitem[{El Ouahidi} et~al.(2025){El Ouahidi}, Lys, Th\"{o}lke, Farrugia,
+  Pasdeloup, Gripon, Jerbi, and Lioi]{reve}
+Yassine {El Ouahidi}, Jonathan Lys, Philipp Th\"{o}lke, Nicolas Farrugia,
+  Bastien Pasdeloup, Vincent Gripon, Karim Jerbi, and Giulia Lioi.
+\newblock {REVE}: A foundation model for {EEG} -- adapting to any setup with
+  large-scale pretraining on 25,000 subjects.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~38, 2025.
+\newblock URL \url{https://openreview.net/forum?id=ZeFMtRBy4Z}.
+
+\bibitem[Marcel and del R.~Mill\'{a}n(2007)]{eeg_biometric_survey}
+S\'{e}bastien Marcel and Jos\'{e} del R.~Mill\'{a}n.
+\newblock Person authentication using brainwaves ({EEG}) and maximum a
+  posteriori model adaptation.
+\newblock \emph{IEEE Transactions on Pattern Analysis and Machine
+  Intelligence}, 29\penalty0 (4):\penalty0 743--752, 2007.
+\newblock \doi{10.1109/TPAMI.2007.1012}.
+
+\bibitem[Fallahi et~al.(2026)Fallahi, Arias-Cabarcos, and
+  Strufe]{fallahi2026eeg_biometric}
+Matin Fallahi, Patricia Arias-Cabarcos, and Thorsten Strufe.
+\newblock Advancing brainwave-based biometrics: A large-scale, multi-session
+  evaluation.
+\newblock \emph{IEEE Transactions on Biometrics, Behavior, and Identity
+  Science}, 2026.
+\newblock \doi{10.1109/TBIOM.2026.3666044}.
+\newblock URL \url{https://ieeexplore.ieee.org/document/11407492/}.
+
+\bibitem[Bidgoly et~al.(2020)Bidgoly, Bidgoly, and
+  Arezoumand]{eeg_reidentification}
+Amir~Jalaly Bidgoly, Hamed~Jalaly Bidgoly, and Zeynab Arezoumand.
+\newblock A survey on methods and challenges in {EEG} based authentication.
+\newblock \emph{Computers \& Security}, 93:\penalty0 101788, 2020.
+\newblock \doi{10.1016/j.cose.2020.101788}.
+
+\bibitem[Meng et~al.(2023)Meng, Jiang, Huang, Li, Luo, and
+  Wu]{unlearnable_eeg_meng}
+Lubin Meng, Xue Jiang, Jian Huang, Wei Li, Hanbin Luo, and Dongrui Wu.
+\newblock User identity protection in {EEG}-based brain-computer interfaces.
+\newblock \emph{IEEE Transactions on Neural Systems and Rehabilitation
+  Engineering}, 31:\penalty0 3576--3586, 2023.
+\newblock \doi{10.1109/TNSRE.2023.3310883}.
+
+\bibitem[Meng et~al.(2024)Meng, Jiang, Chen, Liu, Luo, and
+  Wu]{adversarial_filter}
+Lubin Meng, Xue Jiang, Xiaoqing Chen, Wenzhong Liu, Hanbin Luo, and Dongrui Wu.
+\newblock Adversarial filtering based evasion and backdoor attacks to
+  {EEG}-based brain-computer interfaces.
+\newblock \emph{Information Fusion}, 107:\penalty0 102316, 2024.
+\newblock \doi{10.1016/j.inffus.2024.102316}.
+
+\bibitem[Wang et~al.(2025{\natexlab{b}})Wang, Ruan, Fan, Cheng, and
+  Lv]{wang2025idremovalnet}
+Huabin Wang, Jie Ruan, Cunhang Fan, Yingfan Cheng, and Zhao Lv.
+\newblock {ID-RemovalNet}: Identity removal network for {EEG} privacy
+  protection with enhancing decoding tasks.
+\newblock In \emph{Proceedings of the Thirty-Fourth International Joint
+  Conference on Artificial Intelligence ({IJCAI})}, pages 4209--4217,
+  2025{\natexlab{b}}.
+\newblock \doi{10.24963/ijcai.2025/469}.
+
+\bibitem[He et~al.(2022)He, Chen, Xie, Li, Doll\'{a}r, and Girshick]{mae}
+Kaiming He, Xinlei Chen, Saining Xie, Yanghao Li, Piotr Doll\'{a}r, and Ross
+  Girshick.
+\newblock Masked autoencoders are scalable vision learners.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, pages 16000--16009, 2022.
+\newblock URL
+  \url{https://openaccess.thecvf.com/content/CVPR2022/html/He_Masked_Autoencoders_Are_Scalable_Vision_Learners_CVPR_2022_paper.html}.
+
+\bibitem[Anonymous(2026)]{neuroveil_v4}
+Anonymous.
+\newblock {NeuroVeil}: Learned identity-risk reduction toward privacy-aware
+  {EEG} foundation model pretraining.
+\newblock \emph{Manuscript under submission, 2026}, 2026.
+
+\bibitem[Ma et~al.(2025)Ma, Wu, Lin, Xing, Liu, Jia, and Feng]{codebrain}
+Jingying Ma, Feng Wu, Qika Lin, Yucheng Xing, Chenyu Liu, Ziyu Jia, and
+  Mengling Feng.
+\newblock {CodeBrain}: Towards decoupled interpretability and multi-scale
+  architecture for {EEG} foundation model.
+\newblock \emph{arXiv preprint arXiv:2506.09110}, 2025.
+\newblock URL \url{https://arxiv.org/abs/2506.09110}.
+
+\bibitem[Pradeepkumar et~al.(2025)Pradeepkumar, Piao, Chen, and
+  Sun]{tfm_tokenizer}
+Jathurshan Pradeepkumar, Xihao Piao, Zheng Chen, and Jimeng Sun.
+\newblock Tokenizing single-channel {EEG} with time-frequency motif learning.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=sH3FN9aRZH}.
+
+\bibitem[Anonymous(2025{\natexlab{a}})]{stabletoken}
+Anonymous.
+\newblock {StableToken}: A multi-branch {LFQ} tokenizer for robust semantic
+  speech encoding.
+\newblock \emph{arXiv preprint arXiv:2509.22220}, 2025{\natexlab{a}}.
+
+\bibitem[Anonymous(2025{\natexlab{b}})]{luna}
+Anonymous.
+\newblock {LUNA}: A topology-agnostic foundation model for {EEG}.
+\newblock \emph{arXiv preprint arXiv:2510.22257}, 2025{\natexlab{b}}.
+
+\bibitem[Jiang et~al.(2025)Jiang, Wang, Lu, and Li]{neurolm}
+Wei-Bang Jiang, Yansen Wang, Bao-Liang Lu, and Dongsheng Li.
+\newblock {NeuroLM}: A universal multi-task foundation model for bridging the
+  gap between language and {EEG} signals.
+\newblock In \emph{The Thirteenth International Conference on Learning
+  Representations}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=Io9yFt7XH7}.
+
+\bibitem[Anonymous(2025{\natexlab{c}})]{eeg_fm_bench}
+Anonymous.
+\newblock {EEG-FM-Bench}: A benchmark of {EEG} foundation models.
+\newblock \emph{arXiv preprint arXiv:2508.17742}, 2025{\natexlab{c}}.
+
+\bibitem[Chen et~al.(2024)Chen, Jia, and Wu]{a3e_eeg}
+Chen, Jia, and Wu.
+\newblock {A3E}: Aligned and augmented adversarial ensemble for {EEG} user
+  identity protection.
+\newblock \emph{arXiv preprint arXiv:2412.11390}, 2024.
+
+\bibitem[Fuhrmeister et~al.(2025)]{bridging_privacy_utility}
+Fuhrmeister et~al.
+\newblock Bridging privacy and utility: Synthesizing anonymized {EEG} data for
+  clinical brain decoding.
+\newblock \emph{arXiv preprint arXiv:2509.20454}, 2025.
+
+\bibitem[Ganin et~al.(2016)]{ganin2015_dann}
+Yaroslav Ganin et~al.
+\newblock Domain-adversarial training of neural networks.
+\newblock \emph{Journal of Machine Learning Research}, 2016.
+
+\bibitem[Anonymous(2022)]{exploiting_multi_eeg_domains}
+Anonymous.
+\newblock Exploiting multiple {EEG} domains with adversarial learning.
+\newblock \emph{arXiv preprint arXiv:2204.07777}, 2022.
+
+\bibitem[Anonymous(2025{\natexlab{d}})]{flex_kd}
+Anonymous.
+\newblock {Flex-KD}: Function-tangent knowledge distillation.
+\newblock \emph{arXiv preprint arXiv:2507.10155}, 2025{\natexlab{d}}.
+
+\bibitem[Obeid and Picone(2016)]{tueg}
+Iyad Obeid and Joseph Picone.
+\newblock The {Temple University Hospital EEG} data corpus.
+\newblock \emph{Frontiers in Neuroscience}, 10:\penalty0 196, 2016.
+\newblock \doi{10.3389/fnins.2016.00196}.
+
+\bibitem[Alvarez-Estevez and Rijsman(2022)]{hmc_dataset}
+Diego Alvarez-Estevez and Roselyne~M. Rijsman.
+\newblock Haaglanden {Medisch Centrum} sleep staging database (version 1.1).
+\newblock \emph{PhysioNet}, 2022.
+\newblock \doi{10.13026/t79q-fr32}.
+\newblock URL \url{https://physionet.org/content/hmc-sleep-staging/1.1/}.
+
+\bibitem[Harati et~al.(2015)Harati, Golmohammadi, Lopez, Obeid, and
+  Picone]{harati2015}
+Amir Harati, Meysam Golmohammadi, Silvia Lopez, Iyad Obeid, and Joseph Picone.
+\newblock Improved {EEG} event classification using differential energy.
+\newblock In \emph{2015 IEEE Signal Processing in Medicine and Biology
+  Symposium (SPMB)}, pages 1--5. IEEE, 2015.
+
+\end{thebibliography}
