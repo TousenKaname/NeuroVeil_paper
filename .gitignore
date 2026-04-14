@@ -8,9 +8,6 @@
 *.fdb_latexmk
 *.synctex.gz
 
-# Local review artifacts
-review-stage/
-
 # OS files
 .DS_Store
 Thumbs.db
